@@ -2,7 +2,7 @@
 ### OPTIONS AND VARIABLES ###
 
 dotfilesrepo="https://github.com/HackMEAny/dotfile.git"
-progsfile="progs.csv"
+progsfile="https://raw.githubusercontent.com/QWinOS/Q-Script/master/packages.csv"
 aurhelper="paru"
 repobranch="desktop"
 
