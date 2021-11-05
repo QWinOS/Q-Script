@@ -140,9 +140,27 @@ installationloop() {
 		"P") pipinstall "$program" "$comment" ;;
 		*) maininstall "$program" "$comment" ;;
 		esac
+		[ "$?" = "0" ] || echo "$tag,$program,\"$comment\"" >>/tmp/failinstall.csv
+
 	done </tmp/packages.csv
 }
+failinstallationloop() {
+	([ -f "/tmp/failinstall.csv" ])
+	total=$(wc -l </tmp/failinstall.csv)
+	aurinstalled=$(pacman -Qqm)
+	while IFS=, read -r tag program comment; do
+		n=$((n + 1))
+		echo "$comment" | grep -q "^\".*\"$" && comment="$(echo "$comment" | sed "s/\(^\"\|\"$\)//g")"
+		case "$tag" in
+		"A") aurinstall "$program" "$comment" ;;
+		"G") gitmakeinstall "$program" "$comment" ;;
+		"P") pipinstall "$program" "$comment" ;;
+		*) maininstall "$program" "$comment" ;;
+		esac
+		[ "$?" = "0" ] || echo "$tag,$program,\"$comment\"" >>/home/$name/failinstall.csv
 
+	done </tmp/packages.csv
+}
 putgitrepo() { # Downloads a gitrepo $1 and places the files in $2 only overwriting conflicts
 	dialog --infobox "Downloading and installing config files..." 4 60
 	[ -z "$3" ] && branch="master" || branch="$repobranch"
@@ -213,7 +231,7 @@ sed -i "s/-j2/-j$(nproc)/;s/^#MAKEFLAGS/MAKEFLAGS/" /etc/makepkg.conf
 
 manualinstall paru-bin || error "Failed to install AUR helper."
 
-# The command that does all the installing. Reads the progs.csv file and
+# The command that does all the installing. Reads the packages.csv file and
 # installs each needed program the way required. Be sure to run this only after
 # the user has been created and has priviledges to run sudo without a password
 # and all build dependencies are installed.
@@ -265,7 +283,7 @@ sudo -u "$name" pulseaudio --start
 # serveral important commands, `shutdown`, `reboot`, updating, etc. without a password.
 newperms "%wheel ALL=(ALL) ALL #QWinOS
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/wifi-menu,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/packer -Syu,/usr/bin/packer -Syyu,/usr/bin/systemctl restart NetworkManager,/usr/bin/rc-service NetworkManager restart,/usr/bin/pacman -Syyu --noconfirm,/usr/bin/loadkeys,/usr/bin/paru,/usr/bin/pacman -Syyuw --noconfirm"
-
+failinstallationloop
 # Last message! Install complete!
 finalize
 clear
