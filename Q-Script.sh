@@ -128,8 +128,8 @@ pipinstall() {
 }
 
 installationloop() {
-	([ -f "$progsfile" ] && cp "$progsfile" /tmp/progs.csv) || curl -Ls "$progsfile" | sed '/^#/d' >/tmp/progs.csv
-	total=$(wc -l </tmp/progs.csv)
+	([ -f "$progsfile" ] && cp "$progsfile" /tmp/packages.csv) || curl -Ls "$progsfile" | sed '/^#/d' >/tmp/packages.csv
+	total=$(wc -l </tmp/packages.csv)
 	aurinstalled=$(pacman -Qqm)
 	while IFS=, read -r tag program comment; do
 		n=$((n + 1))
@@ -140,7 +140,7 @@ installationloop() {
 		"P") pipinstall "$program" "$comment" ;;
 		*) maininstall "$program" "$comment" ;;
 		esac
-	done </tmp/progs.csv
+	done </tmp/packages.csv
 }
 
 putgitrepo() { # Downloads a gitrepo $1 and places the files in $2 only overwriting conflicts
