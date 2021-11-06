@@ -159,7 +159,7 @@ failinstallationloop() {
 		esac
 		[ "$?" = "0" ] || echo "$tag,$program,\"$comment\"" >>/home/$name/failinstall.csv
 
-	done </tmp/packages.csv
+	done </tmp/failinstall.csv
 }
 putgitrepo() { # Downloads a gitrepo $1 and places the files in $2 only overwriting conflicts
 	dialog --infobox "Downloading and installing config files..." 4 60
