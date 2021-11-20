@@ -1,12 +1,29 @@
 #!/bin/sh
 ### OPTIONS AND VARIABLES ###
 
-dotfilesrepo="https://github.com/HackMEAny/dotfile.git"
-progsfile="https://raw.githubusercontent.com/QWinOS/Q-Script/master/packages.csv"
+dotfilesrepo
+progsfile
+repobranch
 aurhelper="paru"
-repobranch="desktop"
 
 ### FUNCTIONS ###
+
+choosetheme(){
+  choice=$(dialog --menu "Choose theme" 10 60 25 1 "QKleanDot" 2 "Dracula" 3>&1 1>&2 2>&3 3>-)
+  case $choice in
+    1)
+      dotfilesrepo="https://github.com/QWinOS/QKleanDot"
+      progsfile="https://raw.githubusercontent.com/QWinOS/QKleanDot/master/packages.csv"
+      repobranch="master"
+      ;;
+    2)
+      dotfilesrepo="https://github.com/QWinOS/Qtile-Dracula.git"
+      progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/main/packages.csv"
+      repobranch="main"
+      ;;
+  esac
+}
+
 installpkg() { pacman --noconfirm --needed -S "$1" >/dev/null 2>&1; }
 
 error() {
@@ -144,7 +161,8 @@ installationloop() {
 
 	done </tmp/packages.csv
 }
-failinstallationloop() {
+
+failinstallationloop() { # Try installing failed packages, else save package name to failinstall.csv
 	([ -f "/tmp/failinstall.csv" ])
 	total=$(wc -l </tmp/failinstall.csv)
 	aurinstalled=$(pacman -Qqm)
@@ -161,6 +179,7 @@ failinstallationloop() {
 
 	done </tmp/failinstall.csv
 }
+
 putgitrepo() { # Downloads a gitrepo $1 and places the files in $2 only overwriting conflicts
 	dialog --infobox "Downloading and installing config files..." 4 60
 	[ -z "$3" ] && branch="master" || branch="$repobranch"
@@ -179,7 +198,7 @@ systembeepoff() {
 
 finalize() {
 	dialog --infobox "Preparing welcome message..." 4 50
-	dialog --title "All done!" --msgbox "Congrats! Provided there were no hidden errors, the script completed successfully and all the programs and configuration files should be in place.\\n\\nTo run the new graphical environment, log out and log back in as your new user, then run the command \"startx\" to start the graphical environment (it will start automatically in tty1).\\n\\n.t Enjoy QWin OS" 12 80
+	dialog --title "All done!" --msgbox "Congrats! Provided there were no hidden errors, the script completed successfully and all the programs and configuration files should be in place.\\n\\nTo run the new graphical environment, log out and log back in as your new user, then run the command \"startx\" to start the graphical environment (it will start automatically in tty1).\\n\\n.t Enjoy QWinOS" 12 80
 }
 
 ### THE ACTUAL SCRIPT ###
@@ -188,6 +207,9 @@ finalize() {
 
 # Check if user is root on Arch distro. Install dialog.
 pacman --noconfirm --needed -Sy dialog || error "Are you sure you're running this as the root user, are on an Arch-based distribution and have an internet connection?"
+
+# Get theme to install
+choosetheme || error "User exited."
 
 # Welcome user and pick dotfiles.
 welcomemsg || error "User exited."
@@ -261,7 +283,7 @@ sudo -u "$name" mkdir -p "/home/$name/.cache/zsh/"
 # Use system notifications for Brave on Artix
 # echo "export \$(dbus-launch)" >/etc/profile.d/dbus.sh
 
-# Tap to click
+# Tap to click | Natural Scrolling
 [ ! -f /etc/X11/xorg.conf.d/40-libinput.conf ] && printf 'Section "InputClass"
         Identifier "libinput touchpad catchall"
         MatchIsTouchpad "on"
@@ -269,6 +291,10 @@ sudo -u "$name" mkdir -p "/home/$name/.cache/zsh/"
         Driver "libinput"
 	# Enable left mouse button by tapping
 	Option "Tapping" "on"
+  # Change acceleration to usable standards
+  Option "AccelSpeed" "0.5"
+  # Enable Natural Scrolling
+  Option "NaturalScrolling" "true"
 EndSection' >/etc/X11/xorg.conf.d/40-libinput.conf
 
 # Fix fluidsynth/pulseaudio issue.
@@ -283,6 +309,8 @@ sudo -u "$name" pulseaudio --start
 # serveral important commands, `shutdown`, `reboot`, updating, etc. without a password.
 newperms "%wheel ALL=(ALL) ALL #QWinOS
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/wifi-menu,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/packer -Syu,/usr/bin/packer -Syyu,/usr/bin/systemctl restart NetworkManager,/usr/bin/rc-service NetworkManager restart,/usr/bin/pacman -Syyu --noconfirm,/usr/bin/loadkeys,/usr/bin/paru,/usr/bin/pacman -Syyuw --noconfirm"
+
+# Try installing failed packages if not installed save to file
 failinstallationloop
 # Last message! Install complete!
 finalize
