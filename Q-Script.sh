@@ -13,13 +13,13 @@ choosetheme(){
   case $choice in
     1)
       dotfilesrepo="https://github.com/QWinOS/QKleanDot"
-      progsfile="https://raw.githubusercontent.com/QWinOS/QKleanDot/master/packages.csv"
       repobranch="master"
+      progsfile="https://raw.githubusercontent.com/QWinOS/QKleanDot/$repobranch/packages.csv"
       ;;
     2)
       dotfilesrepo="https://github.com/QWinOS/Qtile-Dracula.git"
-      progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/main/packages.csv"
       repobranch="main"
+      progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/$repobranch/packages.csv"
       ;;
   esac
 }
