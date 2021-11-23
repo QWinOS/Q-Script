@@ -9,7 +9,7 @@ aurhelper="paru"
 ### FUNCTIONS ###
 
 choosetheme() {
-	choice=$(dialog --menu "Choose theme" 10 60 25 1 "QKleanDot" 2 "Dracula" 3>&1 1>&2 2>&3 3>-)
+	choice=$(dialog --menu "Choose theme" 10 60 25 1 "QKleanDot" 2 "Dracula" 3 "Bare Qtile" 3>&1 1>&2 2>&3 3>-)
 	case $choice in
 	1)
 		dotfilesrepo="https://github.com/QWinOS/QKleanDot"
@@ -20,6 +20,10 @@ choosetheme() {
 		dotfilesrepo="https://github.com/QWinOS/Qtile-Dracula.git"
 		repobranch="main"
 		progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/$repobranch/packages.csv"
+		;;
+	3)
+		repobranch="main"
+		progsfile="https://raw.githubusercontent.com/QWinOS/Q-Script/$repobranch/packages.csv"
 		;;
 	esac
 }
@@ -256,6 +260,9 @@ grep -q "ILoveCandy" /etc/pacman.conf || sed -i "/#VerbosePkgLists/a ILoveCandy"
 sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 15/;s/^#Color$/Color/" /etc/pacman.conf
 sed -i "/#\ An\ example\ of\ a\ custom\ package\ repository.\  See\ the\ pacman\ manpage\ for/i [chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" /etc/pacman.conf
 
+# Installing chaotic-aur.
+pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com && pacman-key --lsign-key FBA220DFC880C036 && pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+
 # Use all cores for compilation.
 sed -i "s/-j2/-j$(nproc)/;s/^#MAKEFLAGS/MAKEFLAGS/" /etc/makepkg.conf
 
@@ -272,14 +279,15 @@ installationloop
 # sudo -u "$name" $aurhelper -S libxft-bgra-git >/dev/null 2>&1
 
 # Install the dotfiles in the user's home directory
-putgitrepo "$dotfilesrepo" "/home/$name" "$repobranch"
-rm -f "/home/$name/README.md" "/home/$name/LICENSE" "/home/$name/packages.csv"
 
-# make git ignore deleted LICENSE & README.md files
-git update-index --assume-unchanged "/home/$name/README.md" "/home/$name/LICENSE" "/home/$name/packages.csv"
-
-# Remove .git and .gitignore
-rm -rf "/home/$name/.git" "/home/$name/.gitignore"
+if [ $choice != 3 ]; then
+	putgitrepo "$dotfilesrepo" "/home/$name" "$repobranch"
+	rm -f "/home/$name/README.md" "/home/$name/LICENSE" "/home/$name/packages.csv"
+	# make git ignore deleted LICENSE & README.md files
+	git update-index --assume-unchanged "/home/$name/README.md" "/home/$name/LICENSE" "/home/$name/packages.csv"
+	# Remove .git and .gitignore
+	rm -rf "/home/$name/.git" "/home/$name/.gitignore"
+fi
 
 # Most important command! Get rid of the beep!
 systembeepoff
