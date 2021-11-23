@@ -8,23 +8,30 @@ aurhelper="paru"
 
 ### FUNCTIONS ###
 
-choosetheme(){
-  choice=$(dialog --menu "Choose theme" 10 60 25 1 "QKleanDot" 2 "Dracula" 3>&1 1>&2 2>&3 3>-)
-  case $choice in
-    1)
-      dotfilesrepo="https://github.com/QWinOS/QKleanDot"
-      repobranch="master"
-      progsfile="https://raw.githubusercontent.com/QWinOS/QKleanDot/$repobranch/packages.csv"
-      ;;
-    2)
-      dotfilesrepo="https://github.com/QWinOS/Qtile-Dracula.git"
-      repobranch="main"
-      progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/$repobranch/packages.csv"
-      ;;
-  esac
+choosetheme() {
+	choice=$(dialog --menu "Choose theme" 10 60 25 1 "QKleanDot" 2 "Dracula" 3>&1 1>&2 2>&3 3>-)
+	case $choice in
+	1)
+		dotfilesrepo="https://github.com/QWinOS/QKleanDot"
+		repobranch="master"
+		progsfile="https://raw.githubusercontent.com/QWinOS/QKleanDot/$repobranch/packages.csv"
+		;;
+	2)
+		dotfilesrepo="https://github.com/QWinOS/Qtile-Dracula.git"
+		repobranch="main"
+		progsfile="https://raw.githubusercontent.com/QWinOS/Qtile-Dracula/$repobranch/packages.csv"
+		;;
+	esac
 }
 
 installpkg() { pacman --noconfirm --needed -S "$1" >/dev/null 2>&1; }
+
+settimedate() {
+	dialog --title "Q-Script Installation" --infobox "Synchronizing system time to ensure successful and secure installation of software..." 4 70
+	ntpdate 0.in.pool.ntp.org >/dev/null 2>&1
+	iso=$(curl https://ipapi.co/timezone)
+	timedatectl set-timezone $iso
+}
 
 error() {
 	printf "%s\n" "$1" >&2
@@ -208,11 +215,11 @@ finalize() {
 # Check if user is root on Arch distro. Install dialog.
 pacman --noconfirm --needed -Sy dialog || error "Are you sure you're running this as the root user, are on an Arch-based distribution and have an internet connection?"
 
-# Get theme to install
-choosetheme || error "User exited."
-
 # Welcome user and pick dotfiles.
 welcomemsg || error "User exited."
+
+# Get theme to install
+choosetheme || error "User exited."
 
 # Get and verify username and password.
 getuserandpass || error "User exited."
@@ -233,8 +240,8 @@ for x in curl ca-certificates base-devel git ntp zsh; do
 	installpkg "$x"
 done
 
-dialog --title "Q-Script Installation" --infobox "Synchronizing system time to ensure successful and secure installation of software..." 4 70
-ntpdate 0.in.pool.ntp.org >/dev/null 2>&1
+# Setting time zone.
+settimedate || error "Error setting time and date."
 
 adduserandpass || error "Error adding username and/or password."
 
