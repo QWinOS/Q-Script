@@ -1,9 +1,9 @@
 #!/bin/sh
 ### OPTIONS AND VARIABLES ###
 
-dotfilesrepo
-progsfile
-repobranch
+dotfilesrepo="dummy"
+progsfile="dummy"
+repobranch="dummy"
 aurhelper="paru"
 
 ### FUNCTIONS ###
@@ -92,6 +92,7 @@ refreshkeys() {
 	*systemd*)
 		dialog --infobox "Refreshing Arch Keyring..." 4 40
 		pacman --noconfirm -S archlinux-keyring >/dev/null 2>&1
+		pacman-key --init >/dev/null 2>&1
 		;;
 	*)
 		dialog --infobox "Enabling Arch Repositories..." 4 40
@@ -152,7 +153,7 @@ aurinstall() {
 pipinstall() {
 	dialog --title "Q-Script Installation" --infobox "Installing the Python package \`$1\` ($n of $total). $1 $2" 5 70
 	[ -x "$(command -v "pip")" ] || installpkg python-pip >/dev/null 2>&1
-	yes | pip install "$1"
+	yes | pip install "$1" >/dev/null 2>&1
 }
 
 installationloop() {
@@ -258,10 +259,18 @@ newperms "%wheel ALL=(ALL) NOPASSWD: ALL"
 # Make pacman colorful, concurrent downloads and Pacman eye-candy.
 grep -q "ILoveCandy" /etc/pacman.conf || sed -i "/#VerbosePkgLists/a ILoveCandy" /etc/pacman.conf
 sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 15/;s/^#Color$/Color/" /etc/pacman.conf
-sed -i "/#\ An\ example\ of\ a\ custom\ package\ repository.\  See\ the\ pacman\ manpage\ for/i [chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" /etc/pacman.conf
 
 # Installing chaotic-aur.
-pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com;pacman-key --lsign-key FBA220DFC880C036;pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com >/dev/null 2>&1;pacman-
+key --lsign-key FBA220DFC880C036 >/dev/null 2>&1;pacman -U --noconfirm 'https://cdn-mirror.chao
+tic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/
+chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' >/dev/null 2>&1
+
+# Updating the pacman.conf file.
+sed -i "/#\ An\ example\ of\ a\ custom\ package\ repository.\  See\ the\ pacman
+\ manpage\ for/i [chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" /
+etc/pacman.conf
+pacman -Syy >/dev/null 2>&1
 
 # Use all cores for compilation.
 sed -i "s/-j2/-j$(nproc)/;s/^#MAKEFLAGS/MAKEFLAGS/" /etc/makepkg.conf
