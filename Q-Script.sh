@@ -33,7 +33,7 @@ installpkg() { pacman --noconfirm --needed -S "$1" >/dev/null 2>&1; }
 settimedate() {
 	dialog --title "Q-Script Installation" --infobox "Synchronizing system time to ensure successful and secure installation of software..." 4 70
 	ntpdate 0.in.pool.ntp.org >/dev/null 2>&1
-	iso=$(curl https://ipapi.co/timezone)
+	iso=$(curl -s https://ipapi.co/timezone)
 	timedatectl set-timezone $iso
 }
 
@@ -208,6 +208,22 @@ systembeepoff() {
 	echo "blacklist pcspkr" >/etc/modprobe.d/nobeep.conf
 }
 
+plymouthinstall() {
+  # Add options to grub for smoother transitions
+  sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3\ quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3\ quiet\ fbcon=nodefer\ vga=current\ splash\ vt.global_cursor_default=3\ rd.systemd.show_status=auto\"/" /etc/default/grub
+  grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
+
+  # Include plymouth in mkinitcpio hook
+  sed -i "s/^HOOKS=(base\ udev\ autodetect\ modconf\ block\ filesystems\ keyboard\ fsck)/HOOKS=(base\ udev\ plymouth\ autodetect\ modconf\ block\ filesystems\ keyboard\ fsck)/" /etc/mkinitcpio.conf
+
+  # Set theme for splash screen
+  plymouth-set-default-theme -R cuts
+
+  # Delete line using sed
+  sed -i "/DeviceTimeout=8/d" /etc/plymouth/plymouthd.conf
+  mkinitcpio -p linux > /dev/null 2>&1
+}
+
 finalize() {
 	dialog --infobox "Preparing welcome message..." 4 50
 	dialog --title "All done!" --msgbox "Congrats! Provided there were no hidden errors, the script completed successfully and all the programs and configuration files should be in place.\\n\\nTo run the new graphical environment, log out and log back in as your new user, then run the command \"startx\" to start the graphical environment (it will start automatically in tty1).\\n\\n.t Enjoy QWinOS" 12 80
@@ -261,15 +277,12 @@ grep -q "ILoveCandy" /etc/pacman.conf || sed -i "/#VerbosePkgLists/a ILoveCandy"
 sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 15/;s/^#Color$/Color/" /etc/pacman.conf
 
 # Installing chaotic-aur.
-pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com >/dev/null 2>&1;pacman-
-key --lsign-key FBA220DFC880C036 >/dev/null 2>&1;pacman -U --noconfirm 'https://cdn-mirror.chao
-tic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/
-chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' >/dev/null 2>&1
+pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com >/dev/null 2>&1
+pacman-key --lsign-key FBA220DFC880C036 >/dev/null 2>&1
+pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' >/dev/null 2>&1
 
 # Updating the pacman.conf file.
-sed -i "/#\ An\ example\ of\ a\ custom\ package\ repository.\  See\ the\ pacman
-\ manpage\ for/i [chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" /
-etc/pacman.conf
+sed -i "/#\ An\ example\ of\ a\ custom\ package\ repository.\  See\ the\ pacman\ manpage\ for/i [chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" /etc/pacman.conf
 pacman -Syy >/dev/null 2>&1
 
 # Use all cores for compilation.
@@ -340,6 +353,11 @@ newperms "%wheel ALL=(ALL) ALL #QWinOS
 
 # Try installing failed packages if not installed save to file
 failinstallationloop
+
 # Last message! Install complete!
 finalize
+
+# Install Plymouth
+plymouthinstall
+
 clear
